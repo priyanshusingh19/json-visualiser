@@ -12,6 +12,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [splitPos, setSplitPos] = useState(30); // percentage
   const [isDragging, setIsDragging] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   const handleJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -50,8 +51,14 @@ export default function Home() {
     setError("");
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(jsonInput);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(jsonInput);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      setError("Failed to copy to clipboard");
+    }
   };
 
   const handleMouseDown = () => {
@@ -136,8 +143,12 @@ export default function Home() {
                 </button>
                 <button
                   onClick={handleCopy}
-                  className="p-1.5 bg-green-600 hover:bg-green-700 text-white rounded font-medium transition"
-                  title="Copy JSON"
+                  className={`p-1.5 rounded font-medium transition ${
+                    copySuccess
+                      ? "bg-green-700 text-white"
+                      : "bg-green-600 hover:bg-green-700 text-white"
+                  }`}
+                  title={copySuccess ? "Copied!" : "Copy JSON"}
                   aria-label="Copy JSON"
                 >
                   <Copy size={18} />

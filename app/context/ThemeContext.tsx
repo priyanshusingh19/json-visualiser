@@ -13,10 +13,8 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const stored = localStorage.getItem("theme") as Theme | null;
     if (stored) {
       setTheme(stored);
@@ -44,8 +42,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {
-    // Return default during SSR/build time
-    return { theme: "dark" as Theme, toggleTheme: () => {} };
+    throw new Error("useTheme must be used within ThemeProvider");
   }
   return context;
 }
