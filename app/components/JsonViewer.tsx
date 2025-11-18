@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import JsonNode from "./JsonNode";
+import { useTheme } from "../context/ThemeContext";
 
 interface JsonViewerProps {
   data: unknown;
 }
 
 export default function JsonViewer({ data }: JsonViewerProps) {
+  const { theme } = useTheme();
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set(["root"]));
 
   useEffect(() => {
@@ -32,8 +34,10 @@ export default function JsonViewer({ data }: JsonViewerProps) {
     setExpandedPaths(newPaths);
   };
 
+  const textClass = theme === "dark" ? "text-slate-200" : "text-slate-800";
+
   return (
-    <div className="font-mono text-sm text-slate-200 h-full overflow-auto pr-2">
+    <div className={`font-mono text-sm ${textClass} h-full overflow-auto pr-2`}>
       <JsonNode
         name="root"
         value={data}
