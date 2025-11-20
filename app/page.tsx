@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Moon, Sun, Copy, Trash2 } from "lucide-react";
+import { Moon, Sun, Copy, Trash2, Download } from "lucide-react";
 import JsonViewer from "./components/JsonViewer";
 import { useTheme } from "./context/ThemeContext";
 
@@ -49,6 +49,38 @@ export default function Home() {
     setJsonInput("");
     setParsedJson(null);
     setError("");
+  };
+
+  const handleDownload = () => {
+    if (!jsonInput.trim()) return;
+    
+    try {
+      // Format the JSON if it's not already formatted
+      const jsonToDownload = JSON.stringify(JSON.parse(jsonInput), null, 2);
+      
+      // Create a blob with the JSON data
+      const blob = new Blob([jsonToDownload], { type: 'application/json' });
+      
+      // Create a download link
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Set a default filename with the current date and time
+      const date = new Date();
+      const timestamp = date.toISOString().replace(/[:.]/g, '-').split('T').join('_').split('.')[0];
+      a.download = `json-visualizer-${timestamp}.json`;
+      
+      // Trigger the download
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('Failed to prepare JSON for download. Please check if the JSON is valid.');
+    }
   };
 
   const handleCopy = async () => {
@@ -152,6 +184,19 @@ export default function Home() {
                   aria-label="Copy JSON"
                 >
                   <Copy size={18} />
+                </button>
+                <button
+                  onClick={handleDownload}
+                  className={`p-1.5 rounded font-medium transition ${
+                    !jsonInput.trim() 
+                      ? 'bg-slate-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                  title={jsonInput.trim() ? 'Download JSON' : 'No JSON to download'}
+                  aria-label="Download JSON"
+                  disabled={!jsonInput.trim()}
+                >
+                  <Download size={18} />
                 </button>
                 <button
                   onClick={handleClear}
