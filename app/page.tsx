@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Moon, Sun, Copy, Trash2, Download } from "lucide-react";
+import { useState, useRef } from "react";
+import { Moon, Sun, Copy, Trash2, Download, Table2 } from "lucide-react";
+import * as XLSX from 'xlsx';
 import JsonViewer from "./components/JsonViewer";
 import { useTheme } from "./context/ThemeContext";
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
   const [jsonInput, setJsonInput] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [parsedJson, setParsedJson] = useState<unknown>(null);
   const [error, setError] = useState("");
   const [splitPos, setSplitPos] = useState(30); // percentage
@@ -80,6 +82,53 @@ export default function Home() {
       URL.revokeObjectURL(url);
     } catch (err) {
       setError('Failed to prepare JSON for download. Please check if the JSON is valid.');
+    }
+  };
+
+  const flattenObject = (obj: any, parentKey = '', res: any = {}) => {
+    for (let key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const propName = parentKey ? `${parentKey}.${key}` : key;
+        if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+          flattenObject(obj[key], propName, res);
+        } else {
+          res[propName] = obj[key];
+        }
+      }
+    }
+    return res;
+  };
+
+  const handleExportToExcel = () => {
+    if (!parsedJson) return;
+    
+    try {
+      // Convert the JSON to a worksheet
+      let dataToExport = [];
+      
+      // Handle different JSON structures
+      if (Array.isArray(parsedJson)) {
+        dataToExport = parsedJson.map(item => (typeof item === 'object' && item !== null) ? flattenObject(item) : { value: item });
+      } else if (typeof parsedJson === 'object' && parsedJson !== null) {
+        dataToExport = [flattenObject(parsedJson)];
+      } else {
+        dataToExport = [{ value: parsedJson }];
+      }
+      
+      // Create a new workbook
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(dataToExport);
+      
+      // Add the worksheet to the workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Exported Data');
+      
+      // Generate the Excel file
+      const date = new Date();
+      const timestamp = date.toISOString().replace(/[:.]/g, '-').split('T').join('_').split('.')[0];
+      XLSX.writeFile(wb, `json-export-${timestamp}.xlsx`);
+      
+    } catch (err) {
+      setError('Failed to export to Excel. Please check if the JSON is in a valid format.');
     }
   };
 
@@ -160,12 +209,29 @@ export default function Home() {
               <div className={`${theme === "dark" ? "bg-slate-700" : "bg-slate-100"} px-6 py-4 border-b ${cardBorderClass}`}>
                 <h2 className={`text-lg font-semibold ${textClass}`}>JSON Input</h2>
               </div>
-              <textarea
-                value={jsonInput}
-                onChange={handleJsonChange}
-                placeholder='Paste your JSON here... e.g., {"name": "John", "age": 30}'
-                className={`flex-1 p-6 ${inputBgClass} ${inputTextClass} font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition`}
-              />
+              <div className="flex flex-1 overflow-hidden">
+                <div className="flex flex-col items-end pr-2 py-2 text-right select-none">
+                  {jsonInput.split('\n').map((_, i) => (
+                    <div key={i} className="text-xs text-slate-500 dark:text-slate-600 leading-6 h-6 flex items-center justify-end w-8">
+                      {i + 1}
+                    </div>
+                  ))}
+                </div>
+                <textarea
+                  ref={textareaRef}
+                  value={jsonInput}
+                  onChange={handleJsonChange}
+                  placeholder='Paste your JSON here... e.g., {"name": "John", "age": 30}'
+                  className={`flex-1 p-6 pl-2 ${inputBgClass} ${inputTextClass} font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition leading-6 overflow-y-auto`}
+                  style={{ lineHeight: '1.5rem' }}
+                  onScroll={(e) => {
+                    const lineNumbers = e.currentTarget.parentElement?.querySelector('.line-numbers');
+                    if (lineNumbers) {
+                      lineNumbers.scrollTop = e.currentTarget.scrollTop;
+                    }
+                  }}
+                />
+              </div>
               <div className={`${theme === "dark" ? "bg-slate-700" : "bg-slate-100"} px-4 py-2 border-t ${cardBorderClass} flex gap-2`}>
                 <button
                   onClick={handleFormat}
@@ -197,6 +263,19 @@ export default function Home() {
                   disabled={!jsonInput.trim()}
                 >
                   <Download size={18} />
+                </button>
+                <button
+                  onClick={handleExportToExcel}
+                  className={`p-1.5 rounded font-medium transition ${
+                    !jsonInput.trim() 
+                      ? 'bg-slate-400 cursor-not-allowed' 
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                  title={jsonInput.trim() ? 'Export to Excel' : 'No JSON to export'}
+                  aria-label="Export to Excel"
+                  disabled={!jsonInput.trim()}
+                >
+                  <Table2 size={18} />
                 </button>
                 <button
                   onClick={handleClear}

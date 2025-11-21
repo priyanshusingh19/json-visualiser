@@ -1,7 +1,7 @@
 "use client";
-
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { useEffect, useState } from "react";
 
 interface JsonNodeProps {
   name: string;
@@ -54,10 +54,17 @@ export default function JsonNode({
 
   if (!isExpandable) {
     const keyColor = theme === "light" ? "text-slate-700" : "text-slate-300";
+    const [lineNumber] = useState(() => Math.floor(Math.random() * 1000) + 1);
+  
     return (
-      <div className="py-1">
-        <span className={keyColor}>{name}:</span>
-        <span className={`ml-2 ${getValueColor(value)}`}>{renderValue(value)}</span>
+      <div className="py-1 flex items-start group">
+        <span className={`text-xs ${theme === 'dark' ? 'text-slate-600' : 'text-slate-400'} w-8 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity`}>
+          {lineNumber}
+        </span>
+        <div className="flex-1">
+          <span className={keyColor}>{name}:</span>
+          <span className={`ml-2 ${getValueColor(value)}`}>{renderValue(value)}</span>
+        </div>
       </div>
     );
   }
@@ -75,12 +82,18 @@ export default function JsonNode({
   const countColor = theme === "light" ? "text-slate-600" : "text-slate-500";
   const borderColor = theme === "light" ? "border-slate-300" : "border-slate-700";
 
+  const [lineNumber] = useState(() => Math.floor(Math.random() * 1000) + 1);
+  
   return (
-    <div className="py-1">
-      <div
-        className={`flex items-center cursor-pointer ${hoverBg} rounded px-2 py-1 -mx-2`}
-        onClick={handleToggle}
-      >
+    <div className="py-1 group">
+      <div className="flex items-start">
+        <span className={`text-xs ${theme === 'dark' ? 'text-slate-600' : 'text-slate-400'} w-8 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity`}>
+          {lineNumber}
+        </span>
+        <div 
+          className={`flex-1 flex items-center cursor-pointer ${hoverBg} rounded px-2 py-1 -mx-2`}
+          onClick={handleToggle}
+        >
         <span className={`${chevronColor} mr-1`}>
           {expanded ? (
             <ChevronDown size={16} />
@@ -92,6 +105,7 @@ export default function JsonNode({
         <span className={`${countColor} ml-2`}>
           {isArray ? `[${entries.length}]` : `{${entries.length}}`}
         </span>
+        </div>
       </div>
 
       {expanded && (
